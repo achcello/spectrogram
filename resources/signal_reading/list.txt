@@ -1,0 +1,5 @@
+https://github.com/andabi/deep-voice-conversion
+https://arxiv.org/pdf/1703.10135.pdf
+https://www.researchgate.net/publication/307434911_Phonetic_posteriorgrams_for_many-to-one_voice_conversion_without_parallel_data_training?enrichId=rgreq-7743bbf65b6d3b9c339caa87820c45e0-XXX&enrichSource=Y292ZXJQYWdlOzMwNzQzNDkxMTtBUzo1NTYxOTQ2NTc5OTI3MDRAMTUwOTYxODU0ODE1OA%3D%3D&el=1_x_3&_esc=publicationCoverPdf
+https://arxiv.org/pdf/1710.11385.pdf
+http://delivery.acm.org/10.1145/2900000/2897738/a18-pachet.pdf?ip=146.186.247.10&id=2897738&acc=ACTIVE%20SERVICE&key=A792924B58C015C1%2E782FA3A5BE459501%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35&__acm__=1530839707_d45a3b4e6729c9962ed61bd49f4426ca
