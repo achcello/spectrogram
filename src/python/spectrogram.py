@@ -42,10 +42,9 @@ class Signal(object):
         self.sampleRate = audio.samplerate
         channels = audio.channels
         audio = scipy.io.wavfile.read(self.filePath)[1]  # read from the file
-        if channels > 1:
-            audio = np.mean(audio, axis=1)  # collapse into one channel (?)
         self.length = np.shape(audio)[0]
-        self.values = audio
+        self.values = (np.double(audio) - 128)
+        self.values = self.values[:8000]
 
     def getDuration(self):
         """
@@ -53,7 +52,48 @@ class Signal(object):
 
         @return The duration of the signal in seconds (presumably)
         """
+        if self.sampleRate == 0:
+            print("Sample rate is zero. Pls don't make me divide by zero.")
+            print('Duration is None.')
+            return None
+        if self.length == 0:
+            print('Length = 0. You probably forgot to set it, or did not'
+                  + ' generate it from the WAV file.')
         return self.length / self.sampleRate
+
+    def linearSpectrum(self):
+        """
+        Get the linear spectrum, $X_n(f)$, for a given signal, $f$, of a
+        signal.
+
+        @return X_m: linear spectrum
+        """
+        X_m = np.fft.fft(self.values) / self.sampleRate
+        return X_m
+
+    def S_xx(self):
+        """
+        Given a linear spectrum and a window, generate the double-sided
+        spectral density.
+
+        @return dssd: double-sided spectral density
+        """
+        linSpec = self.linearSpectrum()
+        dssd = 1 / self.getDuration() * np.conj(linSpec) * linSpec
+        return dssd
+
+    def G_xx(self):
+        """
+        Using the double-sided spectral density, generate the single-sided
+        spectral density.
+
+        @return sssd: single-sided spectral density
+        """
+        doubleSpec = self.S_xx()
+        start = np.shape(doubleSpec)[0] // 2
+        sssd = 2 * doubleSpec[start:]
+        sssd[0], sssd[-1] = 0, 0
+        return sssd
 
 
 def hann(N):
@@ -67,27 +107,6 @@ def hann(N):
         return np.ones(1)
     n = np.arange(N)
     return 0.5 - 0.5 * np.cos(2 * np.pi * n / (N - 1))
-
-
-def linearSpectrum(signal):
-    """
-    Get the linear spectrum, $X_n(f)$, for a given signal, $f$, of a signal.
-    """
-    X_m = np.fft.fft(signal.values) / signal.sampleRate
-    return X_m
-
-
-def S_xx(X_m, T):
-    """
-    Given a linear spectrum and a window, generate the double-sided spectral
-    density.
-    """
-    dssd = 1 / T * X_m * X_m
-    return dssd
-
-
-def G_xx():
-    pass
 
 
 def spectrogram(signal):
@@ -109,3 +128,13 @@ def spectrogram(signal):
     print('Sample Rate:', signal.sampleRate)
     print('Duration:', signal.duration)
     print('Values:', signal.values)
+
+
+if __name__ == '__main__':
+    bird = Signal('bird call', 'bird.wav')
+    bird.generateValsFromFile()
+    plt.plot(bird.values)
+    plt.show()
+    plt.plot(bird.linearSpectrum()[1:])
+    plt.show()
+    plt.plot(bird.G_xx())
