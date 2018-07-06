@@ -1,61 +1,111 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 25 10:33:53 2018
-
-@author: Aryn Harmon
-"""
-
-import audioread
 import numpy as np
-import scipy.io.wavfile
 import matplotlib.pyplot as plt
-import seaborn as sns
+import audioread
+import scipy.io.wavfile
+
+
+class Signal(object):
+    """
+    Class to represent signals as a python object
+    """
+    name = 'signal'
+    filePath = '.'
+    sampleRate = 0
+    length = 0
+    values = np.array([])
+    start = 0  # start marker for analysis
+    stop = 0  # stop marker for analysis
+
+    def __init__(self, name, fileName='', sampleRate=0, length=0,
+                 values=np.array([])):
+        """
+        Signal contructor
+
+        @param name The name given to the signal
+        @param filePath The name at which the signal can be found (the signal
+        must be in the resources directory)
+        @param sampleRate The sampling rate of the signal
+        @param length The number of samples in the signal
+        @param values A numpy array of values representing the signal
+        """
+        self.name = name
+        self.filePath = '../../resources/' + fileName
+        self.sampleRate = sampleRate
+        self.length = length
+        self.values = values
+
+    def generateValsFromFile(self):
+        if self.filePath == '':
+            print('Please first set the filepath for the signal source.')
+            return
+        audio = audioread.audio_open(self.filePath)  # read in the audio file
+        self.sampleRate = audio.samplerate
+        channels = audio.channels
+        audio = scipy.io.wavfile.read(self.filePath)[1]  # read from the file
+        if channels > 1:
+            audio = np.mean(audio, axis=1)  # collapse into one channel (?)
+        self.length = np.shape(audio)[0]
+        self.values = audio
+
+    def getDuration(self):
+        """
+        Getter for the duration of the signal
+
+        @return The duration of the signal in seconds (presumably)
+        """
+        return self.length / self.sampleRate
 
 
 def hann(N):
+    """
+    Function for creating a Hann window for smoothing signal down to zero at
+    the edges of the window.
+    """
+    if N < 1:
+        return np.array([])
+    elif N == 1:
+        return np.ones(1)
+    n = np.arange(N)
+    return 0.5 - 0.5 * np.cos(2 * np.pi * n / (N - 1))
+
+
+def linearSpectrum(signal):
+    """
+    Get the linear spectrum, $X_n(f)$, for a given signal, $f$, of a signal.
+    """
+    X_m = np.fft.fft(signal.values) / signal.sampleRate
+    return X_m
+
+
+def S_xx(X_m, T):
+    """
+    Given a linear spectrum and a window, generate the double-sided spectral
+    density.
+    """
+    dssd = 1 / T * X_m * X_m
+    return dssd
+
+
+def G_xx():
     pass
 
 
-def visualize(file):
-    audio = audioread.audio_open(file)        # read in the audio file
-    print(' = = = Audio Information = = = ')  # print out some information
-    print('Channels:', audio.channels)
-    channels = audio.channels
-    print('Sample Rate:', audio.samplerate)
-    sampleRate = audio.samplerate
-    print('Duration:', audio.duration)
+def spectrogram(signal):
+    """
+    Generates the spectrogram of an input signal.
 
-    audio = scipy.io.wavfile.read(file)[1]    # read from the converted file
-    if channels > 1:
-        audio = np.mean(audio, axis=1)        # collapse into one channel (?)
-    audio = audio[100:4196]  # piano goes from 5000-100000
-    samples = np.shape(audio)[0]
-    duration = samples / sampleRate
-    print("Trimmed Samples:", samples)
-    print("Trimmed Duration:", duration)
+    @param signal The input signal object
+    @return f The frequency spectrum
+    @return t The time domain
+    @return Sxx The values of the spectrogram
+    """
+    try:
+        signal.name = signal.name
+    except AttributeError as e:
+        print('AttributeError: input is not a Signal object')
 
-    audioFFT = 10*np.log10(np.fft.fftshift(np.fft.fft(audio, norm="ortho"))/ sampleRate)  # FFT of the clip, piano is -20000
-
-    sns.set()
-    plt.figure(1)
-    plt.plot(audio)
-    plt.figure(2)
-    # plt.ylim(-1000000, 1000000)
-    # plt.plot(np.matrix.transpose(audioFFT)[1:], 'r-')  # piano is -5000
-
-    bucketWidth = 512
-    buckets = samples // bucketWidth          # calculate number of buckets
-    spec = []                                 # accumulator arroy
-    for bucket in range(buckets * 1):
-        start = (bucket * bucketWidth) // 1
-        end = start + bucketWidth
-        # print(start, end)
-        spec.append(10*np.log10(.02*np.fft.fft(audio[start:end],
-                                               norm="ortho")[1:10]/(sampleRate*bucketWidth)))
-    plt.figure(3)
-    sns.heatmap(np.matrix.transpose(np.abs(np.array(spec)))).invert_yaxis()
-
-
-if __name__ == '__main__':
-    file = '../../resources/440SineWave.wav'
-    visualize(file)
+    print('Name:', signal.name)
+    print('Length:', signal.length)
+    print('Sample Rate:', signal.sampleRate)
+    print('Duration:', signal.duration)
+    print('Values:', signal.values)
