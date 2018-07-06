@@ -15,7 +15,7 @@ class Signal(object):
     start = 0  # start marker for analysis
     stop = 0  # stop marker for analysis
 
-    def __init__(self, name, filePath='', sampleRate=0, length=0, values=0):
+    def __init__(self, name, filePath='', sampleRate=0, length=0, values=np.array([])):
         """
         Signal contructor
 
@@ -27,6 +27,9 @@ class Signal(object):
         """
         self.name = name
         self.filePath = filePath
+        self.sampleRate = sampleRate
+        self.length = length
+        self.values = values
 
     def generateValsFromFile(self):
         if self.filePath == '':
