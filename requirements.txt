@@ -1,0 +1,5 @@
+seaborn==0.8.1
+audioread==2.1.6
+scipy==1.1.0
+matplotlib==2.2.2
+numpy==1.14.3
