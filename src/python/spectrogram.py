@@ -47,7 +47,7 @@ class Signal(object):
         if channels > 1:
             audio = np.mean(audio, axis=1)  # collapse into one channel (?)
         self.values = np.double(audio) - 128
-        self.values = self.values[:200000]
+        self.values = self.values[:300000]
         self.length = np.shape(self.values)[0]
         self.freqRes = self.sampleRate / self.length
 
@@ -143,11 +143,11 @@ def spectrogram(signal, binWidth, overlap=1):
     f = np.linspace(0, binWidth // 2 * signal.sampleRate // binWidth, binWidth // 2)
     t = np.linspace(0, signal.length / signal.sampleRate, signal.length // binWidth * overlap)
 
-    starts = np.arange(0, signal.length, binWidth * overlap)
+    starts = np.arange(0, signal.length, binWidth // overlap)
     starts = np.append(starts, signal.length)
     specs = np.zeros((binWidth // 2, np.shape(t)[0]))
 
-    for step in range(np.shape(starts)[0] - 2):
+    for step in range(np.shape(starts)[0] - overlap - 1):
         subsignal = Signal(sampleRate=signal.sampleRate,
                            length=starts[step + overlap] - starts[step],
                            values=signal.values[starts[step]:starts[step + overlap]])
@@ -157,7 +157,7 @@ def spectrogram(signal, binWidth, overlap=1):
 
 
 if __name__ == '__main__':
-    bird = Signal('bird calls', 'bird.wav')
+    bird = Signal('Agnew Talking about Nabobs', 'agnew_nabobs.wav')
     bird.generateValsFromFile()
 
     # plt.plot(bird.values)
@@ -173,12 +173,12 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(7, 5))
     plt.title(bird.name)
-    specs, f, t = spectrogram(bird, 100, 1)
+    specs, f, t = spectrogram(bird, 1000, 200)
     print('Heatmap size:', np.shape(specs))
     t, f = np.meshgrid(t, f)
     plt.xlabel('Time (s)')
     plt.ylabel('Frequency (Hz)')
-    plt.ylim(0,5000)
-    plt.pcolormesh(t, f, specs, vmin=-50)
+    plt.ylim(0, 5000)
+    plt.pcolormesh(t, f, specs, vmin=-40)
     plt.colorbar()
     plt.savefig('spec.png', dpi=300, bbox_inches='tight')
