@@ -181,4 +181,4 @@ if __name__ == '__main__':
     plt.ylim(0, 5000)
     plt.pcolormesh(t, f, specs, vmin=-40)
     plt.colorbar()
-    plt.savefig('spec.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../../figures/spec.png', dpi=300, bbox_inches='tight')
