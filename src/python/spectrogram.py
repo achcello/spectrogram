@@ -15,6 +15,7 @@ class Signal(object):
     values = np.array([])
     start = 0  # start marker for analysis
     stop = 0  # stop marker for analysis
+    freqRes = 0  # frequency resolution resulting from transformation
 
     def __init__(self, name, fileName='', sampleRate=0, length=0,
                  values=np.array([])):
@@ -39,12 +40,26 @@ class Signal(object):
             print('Please first set the filepath for the signal source.')
             return
         audio = audioread.audio_open(self.filePath)  # read in the audio file
+
         self.sampleRate = audio.samplerate
         channels = audio.channels
         audio = scipy.io.wavfile.read(self.filePath)[1]  # read from the file
-        self.length = np.shape(audio)[0]
-        self.values = (np.double(audio) - 128)
-        self.values = self.values[:8000]
+        if channels > 1:
+            audio = np.mean(audio, axis=1)  # collapse into one channel (?)
+        self.values = np.double(audio) - 128
+        self.values = self.values[:]
+        self.length = np.shape(self.values)[0]
+        self.values = hann(self.length) * self.values
+        self.freqRes = self.sampleRate / self.length
+        
+        scaled = np.int16(self.values/np.max(np.abs(self.values)) * 32767)
+        scipy.io.wavfile.write('window.wav', self.sampleRate, scaled)
+
+        print('Name:', self.name)
+        print('Length:', self.length)
+        print('Sample Rate:', self.sampleRate)
+        print('Duration:', self.getDuration())
+        print('Values:', self.values)
 
     def getDuration(self):
         """
@@ -123,18 +138,18 @@ def spectrogram(signal):
     except AttributeError as e:
         print('AttributeError: input is not a Signal object')
 
-    print('Name:', signal.name)
-    print('Length:', signal.length)
-    print('Sample Rate:', signal.sampleRate)
-    print('Duration:', signal.duration)
-    print('Values:', signal.values)
-
 
 if __name__ == '__main__':
-    bird = Signal('bird call', 'bird.wav')
+    bird = Signal('bird', 'bird.wav')
     bird.generateValsFromFile()
+    
     plt.plot(bird.values)
     plt.show()
-    plt.plot(bird.linearSpectrum()[1:])
-    plt.show()
-    plt.plot(bird.G_xx())
+    
+    plt.xlabel('Frequency (Hz)')
+    x = np.linspace(0, bird.length // 2 * bird.freqRes, bird.length // 2)
+    plt.ylabel('Intensity (?)')
+    y = bird.G_xx()
+
+    # plt.plot(bird.linearSpectrum()[1:])
+    plt.plot(x, y)
