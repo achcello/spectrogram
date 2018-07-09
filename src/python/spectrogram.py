@@ -15,12 +15,12 @@ class Signal(object):
     values = np.array([])
     start = 0  # start marker for analysis
     stop = 0  # stop marker for analysis
-    freqRes = 0  # frequency resolution resulting from transformation
+    freqRes = 0  # frequency resolution resulting from DFT discretization
 
-    def __init__(self, name, fileName='', sampleRate=0, length=0,
+    def __init__(self, name='', fileName='', sampleRate=0, length=0,
                  values=np.array([])):
         """
-        Signal contructor
+        Signal constructor
 
         @param name The name given to the signal
         @param filePath The name at which the signal can be found (the signal
@@ -47,13 +47,12 @@ class Signal(object):
         if channels > 1:
             audio = np.mean(audio, axis=1)  # collapse into one channel (?)
         self.values = np.double(audio) - 128
-        self.values = self.values[:]
+        self.values = self.values[:200000]
         self.length = np.shape(self.values)[0]
-        self.values = hann(self.length) * self.values
         self.freqRes = self.sampleRate / self.length
-        
-        scaled = np.int16(self.values/np.max(np.abs(self.values)) * 32767)
-        scipy.io.wavfile.write('window.wav', self.sampleRate, scaled)
+
+        # scaled = np.int16(self.values/np.max(np.abs(self.values)) * 32767)
+        # scipy.io.wavfile.write('window.wav', self.sampleRate, scaled)
 
         print('Name:', self.name)
         print('Length:', self.length)
@@ -76,39 +75,42 @@ class Signal(object):
                   + ' generate it from the WAV file.')
         return self.length / self.sampleRate
 
-    def linearSpectrum(self):
-        """
-        Get the linear spectrum, $X_n(f)$, for a given signal, $f$, of a
-        signal.
 
-        @return X_m: linear spectrum
-        """
-        X_m = np.fft.fft(self.values) / self.sampleRate
-        return X_m
+def linearSpectrum(signal):
+    """
+    Get the linear spectrum, $X_n(f)$, for a given signal, $f$, of a
+    signal.
 
-    def S_xx(self):
-        """
-        Given a linear spectrum and a window, generate the double-sided
-        spectral density.
+    @return X_m: linear spectrum
+    """
+    X_m = np.fft.fft(hann(signal.length) * signal.values) / signal.sampleRate
+    return X_m
 
-        @return dssd: double-sided spectral density
-        """
-        linSpec = self.linearSpectrum()
-        dssd = 1 / self.getDuration() * np.conj(linSpec) * linSpec
-        return dssd
 
-    def G_xx(self):
-        """
-        Using the double-sided spectral density, generate the single-sided
-        spectral density.
+def S_xx(signal):
+    """
+    Given a linear spectrum and a window, generate the double-sided
+    spectral density.
 
-        @return sssd: single-sided spectral density
-        """
-        doubleSpec = self.S_xx()
-        start = np.shape(doubleSpec)[0] // 2
-        sssd = 2 * doubleSpec[start:]
-        sssd[0], sssd[-1] = 0, 0
-        return sssd
+    @return dssd: double-sided spectral density
+    """
+    linSpec = linearSpectrum(signal)
+    dssd = 1 / signal.getDuration() * np.conj(linSpec) * linSpec
+    return dssd
+
+
+def G_xx(signal):
+    """
+    Using the double-sided spectral density, generate the single-sided
+    spectral density.
+
+    @return sssd: single-sided spectral density
+    """
+    doubleSpec = S_xx(signal)
+    end = np.shape(doubleSpec)[0] // 2
+    sssd = 2 * doubleSpec[:end]
+    sssd[0], sssd[-1] = 0, 0
+    return 10 * np.log10(sssd)
 
 
 def hann(N):
@@ -124,32 +126,59 @@ def hann(N):
     return 0.5 - 0.5 * np.cos(2 * np.pi * n / (N - 1))
 
 
-def spectrogram(signal):
+def spectrogram(signal, binWidth, overlap=1):
     """
     Generates the spectrogram of an input signal.
 
     @param signal The input signal object
+    @return specs The values of the spectrogram
     @return f The frequency spectrum
     @return t The time domain
-    @return Sxx The values of the spectrogram
     """
     try:
         signal.name = signal.name
     except AttributeError as e:
         print('AttributeError: input is not a Signal object')
 
+    f = np.linspace(0, binWidth // 2 * signal.sampleRate // binWidth, binWidth // 2)
+    t = np.linspace(0, signal.length / signal.sampleRate, signal.length // binWidth * overlap)
+
+    starts = np.arange(0, signal.length, binWidth * overlap)
+    starts = np.append(starts, signal.length)
+    specs = np.zeros((binWidth // 2, np.shape(t)[0]))
+
+    for step in range(np.shape(starts)[0] - 2):
+        subsignal = Signal(sampleRate=signal.sampleRate,
+                           length=starts[step + overlap] - starts[step],
+                           values=signal.values[starts[step]:starts[step + overlap]])
+        specs[:, step] = G_xx(subsignal)
+
+    return specs, f, t
+
 
 if __name__ == '__main__':
-    bird = Signal('bird', 'bird.wav')
+    bird = Signal('bird calls', 'bird.wav')
     bird.generateValsFromFile()
-    
-    plt.plot(bird.values)
-    plt.show()
-    
-    plt.xlabel('Frequency (Hz)')
-    x = np.linspace(0, bird.length // 2 * bird.freqRes, bird.length // 2)
-    plt.ylabel('Intensity (?)')
-    y = bird.G_xx()
 
-    # plt.plot(bird.linearSpectrum()[1:])
-    plt.plot(x, y)
+    # plt.plot(bird.values)
+    # plt.show()
+
+    # plt.xlabel('Frequency (Hz)')
+    # x = np.linspace(0, bird.length // 2 * bird.freqRes, bird.length // 2)
+    # plt.ylabel('Intensity (some sort of 10*log10 thing)')
+    # y = G_xx(bird)
+    # plt.xlim(0, 5000)
+    # plt.plot(x, y)
+    # plt.show()
+
+    plt.figure(figsize=(7, 5))
+    plt.title(bird.name)
+    specs, f, t = spectrogram(bird, 100, 1)
+    print('Heatmap size:', np.shape(specs))
+    t, f = np.meshgrid(t, f)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Frequency (Hz)')
+    plt.ylim(0,5000)
+    plt.pcolormesh(t, f, specs, vmin=-50)
+    plt.colorbar()
+    plt.savefig('spec.png', dpi=300, bbox_inches='tight')
