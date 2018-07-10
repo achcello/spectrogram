@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(7, 5))
     plt.title(bird.name)
-    specs, f, t = spectrogram(bird, 1000, 200)
+    specs, f, t = spectrogram(bird, 2000, 200)
     print('Heatmap size:', np.shape(specs))
     t, f = np.meshgrid(t, f)
     plt.xlabel('Time (s)')
@@ -182,3 +182,4 @@ if __name__ == '__main__':
     plt.pcolormesh(t, f, specs, vmin=-40)
     plt.colorbar()
     plt.savefig('../../figures/spec.png', dpi=300, bbox_inches='tight')
+    plt.show()
