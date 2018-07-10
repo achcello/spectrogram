@@ -157,7 +157,7 @@ def spectrogram(signal, binWidth, overlap=1):
 
 
 if __name__ == '__main__':
-    bird = Signal('Agnew Talking about Nabobs', 'agnew_nabobs.wav')
+    bird = Signal('Clock Tower', 'clock-tower.wav')
     bird.generateValsFromFile()
 
     # plt.plot(bird.values)
