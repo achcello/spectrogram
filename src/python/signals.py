@@ -85,7 +85,7 @@ def linearSpectrum(signal):
 
     @return X_m: linear spectrum
     """
-    X_m = np.fft.fft(hann(signal.length) * signal.values) / signal.sampleRate
+    X_m = np.fft.fft((signal.length) * signal.values) / signal.sampleRate
     return X_m
 
 

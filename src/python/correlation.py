@@ -1,3 +1,6 @@
+"""
+Finds the cross correlation between two signals.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -17,7 +20,7 @@ def S_xy(signal1, signal2):
     return sxy
 
 
-def crossCorrelation(signal1, signal2):
+def crossCorrelation(signal1, signal2, binWidth, overlap):
     """
     Generate the cross-correlation between two signals.
 
@@ -27,8 +30,27 @@ def crossCorrelation(signal1, signal2):
         raise ValueError("signals are not the same length")
     if signal1.sampleRate != signal2.sampleRate:
         raise ValueError("signals do not have the same sample rate")
-    # return from the frequency domain to the time domain with the ifft
-    return np.fft.ifft(S_xy(signal1, signal2)) * signal1.sampleRate
+
+    t = np.linspace(0, signal1.length / signal1.sampleRate, signal1.length * overlap)
+    print(t)
+
+    starts = np.arange(0, signal1.length, binWidth // overlap)
+    starts = np.append(starts, signal1.length)
+    corr = np.zeros(signal1.length * overlap)
+    '''
+    for step in range(1, np.shape(starts)[0]):
+        subsignal1 = Signal(sampleRate=signal1.sampleRate,
+                            length=starts[step + overlap] - starts[step],
+                            values=signal1.values[starts[step - 1]:starts[step]])
+        subsignal2 = Signal(sampleRate=signal2.sampleRate,
+                            length=starts[step + overlap] - starts[step],
+                            values=signal2.values[starts[step - 1]:starts[step]])
+        corr[starts[step]:starts[step+overlap]] = np.fft.ifft(S_xy(subsignal1, subsignal2)) * signal1.sampleRate
+    '''
+    corr = np.fft.ifft(S_xy(signal1, signal2)) * signal1.sampleRate
+    corr = corr / np.max(corr)
+    return corr, t
+    # return corr, t
 
 
 if __name__ == "__main__":
@@ -45,6 +67,7 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     # plot signals' spectrograms
+
     plt.subplot(321)
     plt.title("Chirp")
     specs, f, t = spectrogram(chirp, 1000, 200)
@@ -89,7 +112,7 @@ if __name__ == "__main__":
     plt.subplot(313)
     plt.xlabel("Time (s)")
     plt.title("Cross-correlation")
-    rxy = crossCorrelation(chirp, outside)
+    rxy, tm = crossCorrelation(chirp, outside, 2000, 1)
     plt.plot(tm[::10], rxy[::10])
     print("@debug created cross-correlation")
 
