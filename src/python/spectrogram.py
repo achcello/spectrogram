@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from signals import Signal, G_xx  # custom module
 
 
-def spectrogram(signal, binWidth, overlap=1):
+def spectrogram(signal, binWidth, overlap):
     """
     Generates the spectrogram of an input signal.
 
@@ -30,7 +30,6 @@ def spectrogram(signal, binWidth, overlap=1):
                            length=starts[step + overlap] - starts[step],
                            values=signal.values[starts[step]:starts[step + overlap]])
         specs[:, step] = G_xx(subsignal)
-
     return specs, f, t
 
 
@@ -50,7 +49,6 @@ if __name__ == '__main__':
     # plt.show()
 
     plt.figure(figsize=(7, 5))
-    plt.subplot(321)
     plt.title(bird.name)
     specs, f, t = spectrogram(bird, 1000, 200)
     specs = specs[:, ::20]
