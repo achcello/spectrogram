@@ -35,7 +35,7 @@ def spectrogram(signal, binWidth, overlap=1):
 
 
 if __name__ == '__main__':
-    bird = Signal('Outside', '171013104635_1_B.wav')
+    bird = Signal('Outside', 'beepbeep.wav')
     bird.generateValsFromFile()
 
     # plt.plot(bird.values)
