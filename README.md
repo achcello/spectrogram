@@ -8,3 +8,6 @@
 
 ## American Male Political Speech
 ![agnew](figures/agnew_speech.png)
+
+## Cross Correlation
+![corr](figures/cross-correlation.png)
